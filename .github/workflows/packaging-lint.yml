@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Run packaging lint
-        uses: storytold/craft-common-actions/actions/packaging-lint@main
+        uses: storytold/craft-common-actions/actions/packaging-lint@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           actionlint-version: ${{ inputs.actionlint-version }}
       - name: App-specific packaging checks

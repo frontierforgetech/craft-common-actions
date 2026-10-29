@@ -179,7 +179,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: v
         name: Resolve version
-        uses: storytold/craft-common-actions/actions/resolve-version@main
+        uses: storytold/craft-common-actions/actions/resolve-version@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           input-version: ${{ inputs.version }}
           app-title: ${{ inputs.app-title }}
@@ -266,11 +266,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check out craft-fonts
         if: inputs.craft-fonts-ref != ''
-        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           ref: ${{ inputs.craft-fonts-ref }}
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
@@ -406,11 +406,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check out craft-fonts
         if: inputs.craft-fonts-ref != ''
-        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           ref: ${{ inputs.craft-fonts-ref }}
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
@@ -423,7 +423,7 @@ jobs:
         shell: bash
         run: cargo xtask version set "$VERSION"
       - name: Install WiX
-        uses: storytold/craft-common-actions/actions/install-wix@main
+        uses: storytold/craft-common-actions/actions/install-wix@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           wix-version: ${{ inputs.wix-version }}
       - name: Build, sign, package
@@ -511,12 +511,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check out craft-fonts
         if: inputs.craft-fonts-ref != ''
-        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           ref: ${{ inputs.craft-fonts-ref }}
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
-      - uses: storytold/craft-common-actions/actions/install-linux-deps@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
+      - uses: storytold/craft-common-actions/actions/install-linux-deps@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           deb-arch: ${{ matrix.deb }}
           nfpm-version: ${{ inputs.nfpm-version }}
@@ -681,7 +681,7 @@ jobs:
           fi
           tarball="${tarballs[0]}"
           echo "path=$tarball" >>"$GITHUB_OUTPUT"
-      - uses: storytold/craft-common-actions/actions/arch-package@main
+      - uses: storytold/craft-common-actions/actions/arch-package@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           tarball: ${{ steps.tarball.outputs.path }}
           arch: ${{ matrix.arch }}
@@ -773,11 +773,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check out craft-fonts
         if: inputs.craft-fonts-ref != ''
-        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           ref: ${{ inputs.craft-fonts-ref }}
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
       - name: Start the FreeBSD VM
         uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1.5.9
         with:
@@ -866,7 +866,7 @@ jobs:
         id: cargo-cache
         continue-on-error: true
         timeout-minutes: 10
-        uses: storytold/craft-common-actions/actions/freebsd-cargo-cache@main
+        uses: storytold/craft-common-actions/actions/freebsd-cargo-cache@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           profile: release
           configuration: ${{ toJSON(inputs) }}
@@ -947,7 +947,7 @@ jobs:
         if: github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.cargo-cache.outputs.key != '' && steps.cargo-cache.outputs.cache-hit != 'true'
         continue-on-error: true
         timeout-minutes: 10
-        uses: storytold/craft-common-actions/actions/freebsd-cargo-cache@main
+        uses: storytold/craft-common-actions/actions/freebsd-cargo-cache@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           phase: save
           profile: release
@@ -1021,16 +1021,16 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           key: release-web
-      - uses: storytold/craft-common-actions/actions/install-trunk@main
+      - uses: storytold/craft-common-actions/actions/install-trunk@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           trunk-version: ${{ inputs.trunk-version }}
       - name: Check out craft-fonts
         if: inputs.web-craft-fonts && inputs.craft-fonts-ref != ''
-        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           ref: ${{ inputs.craft-fonts-ref }}
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
       - name: Apply version override
         if: inputs.version != ''
         run: cargo xtask version set "$VERSION"
@@ -1114,11 +1114,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check out craft-fonts
         if: inputs.craft-fonts-ref != ''
-        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           ref: ${{ inputs.craft-fonts-ref }}
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
@@ -1129,9 +1129,9 @@ jobs:
       - name: Apply version override
         if: inputs.version != ''
         run: cargo xtask version set "$VERSION"
-      - uses: storytold/craft-common-actions/actions/install-riscv64-cross@main
+      - uses: storytold/craft-common-actions/actions/install-riscv64-cross@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
       - name: Install nfpm (SHA256-verified)
-        uses: storytold/craft-common-actions/actions/install-nfpm@main
+        uses: storytold/craft-common-actions/actions/install-nfpm@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           nfpm-version: ${{ inputs.nfpm-version }}
           deb-arch: amd64
@@ -1184,7 +1184,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
@@ -1218,7 +1218,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: storytold/craft-common-actions/actions/draft-release@main
+      - uses: storytold/craft-common-actions/actions/draft-release@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           version: ${{ needs.version.outputs.version }}
           app-title: ${{ inputs.app-title }}

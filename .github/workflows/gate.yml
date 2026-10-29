@@ -131,7 +131,7 @@ jobs:
 
       # Does nothing unless the repository has craft-i18n.rev; then builds require the translations.
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
 
       # Before the cache step: rust-cache keys on CARGO_* and RUST* variables.
       - name: Caller environment
@@ -168,7 +168,7 @@ jobs:
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
-        uses: storytold/craft-common-actions/actions/install-apt-packages@main
+        uses: storytold/craft-common-actions/actions/install-apt-packages@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           packages: ${{ inputs.packages }}
 

@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check out craft-i18n
-        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-i18n@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
@@ -56,7 +56,7 @@ jobs:
         with:
           key: windows-arm64-package
       - name: Install WiX
-        uses: storytold/craft-common-actions/actions/install-wix@main
+        uses: storytold/craft-common-actions/actions/install-wix@395270d2c0bd48ce1b71ae127f2a54e435fc1b42 # main as of 2026-10-29 (actions/ identical at fa5ef187)
         with:
           wix-version: ${{ inputs.wix-version }}
       - name: Build and package (unsigned)
