@@ -74,7 +74,7 @@ class SonarCloudTests(unittest.TestCase):
         self.assertEqual(
             self.scan['with']['args'].splitlines()[0],
             '"-Dsonar.projectKey=${{ steps.project.outputs.key }}" -Dsonar.organization=storytold '
-            '-Dsonar.rust.lcov.reportPaths=lcov.info',
+            '-Dsonar.rust.lcov.reportPaths=lcov.info "-Dsonar.cpd.exclusions=**/i18n/**"',
         )
 
     def test_coverage_is_generated_before_the_scan_imports_it(self):
@@ -83,6 +83,91 @@ class SonarCloudTests(unittest.TestCase):
         self.assertIn('cargo llvm-cov', coverage['run'])
         self.assertIn('--output-path lcov.info', coverage['run'])
         self.assertEqual(coverage['continue-on-error'], 'true')
+
+    def test_coverage_actions_track_main_and_pin_external_actions(self):
+        workflow = yaml.load(
+            (ROOT / '.github/workflows/sonarcloud.yml').read_text(), Loader=yaml.BaseLoader)
+        step_groups = [job.get('steps', []) for job in workflow['jobs'].values()]
+        for helper in ('checkout-craft-fonts', 'install-apt-packages'):
+            action = yaml.load(
+                (ROOT / 'actions' / helper / 'action.yml').read_text(), Loader=yaml.BaseLoader)
+            step_groups.append(action['runs']['steps'])
+        for steps in step_groups:
+            for step in steps:
+                if 'uses' in step:
+                    with self.subTest(action=step['uses']):
+                        if step['uses'].startswith('storytold/craft-common-actions/'):
+                            self.assertTrue(step['uses'].endswith('@main'))
+                        else:
+                            self.assertRegex(step['uses'], r'^[^@]+@[0-9a-f]{40}$')
+
+    def test_archive_build_has_the_same_fonts_as_runtime(self):
+        workflow = yaml.load(
+            (ROOT / '.github/workflows/sonarcloud.yml').read_text(), Loader=yaml.BaseLoader)
+        for job, runner_name in [('build', 'Build instrumented test archive'),
+                                 ('coverage', "Run this shard's tests"),
+                                 ('sonarcloud', 'Generate Rust coverage')]:
+            steps = workflow['jobs'][job]['steps']
+            checkout = next(step for step in steps if step.get('name') == 'Check out craft-fonts')
+            runner = next(step for step in steps if step.get('name') == runner_name)
+            self.assertLess(steps.index(checkout), steps.index(runner))
+            self.assertEqual(checkout['with']['ref'], '${{ inputs.fonts-ref }}')
+            self.assertNotIn('CRAFT_FONTS_DIR', runner['env'])
+            self.assertNotIn('CRAFT_FONTS_REQUIRED', runner['env'])
+            required = next(step for step in steps if step.get('name') == 'Require requested craft-fonts')
+            self.assertLess(steps.index(required), steps.index(runner))
+            self.assertTrue(required['if'].startswith("inputs.fonts-ref != ''"))
+            self.assertEqual(required['env']['CRAFT_FONTS_PATH'], '${{ github.workspace }}/craft-fonts')
+            with tempfile.TemporaryDirectory(prefix='font setup ') as temp:
+                output = Path(temp) / 'github env'
+                font_dir = Path(temp) / 'craft fonts'
+                font_dir.mkdir()
+                result = subprocess.run(
+                    ['bash', '-e', '-o', 'pipefail', '-c', required['run']],
+                    env={**os.environ, 'CRAFT_FONTS_PATH': str(font_dir), 'GITHUB_ENV': str(output)},
+                    capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(output.read_text(),
+                                 f'CRAFT_FONTS_DIR={font_dir}\nCRAFT_FONTS_REQUIRED=1\n')
+
+    def test_pdf_fixture_setup_runs_before_both_test_runners(self):
+        workflow = yaml.load(
+            (ROOT / '.github/workflows/sonarcloud.yml').read_text(), Loader=yaml.BaseLoader)
+        self.assertEqual(workflow['on']['workflow_call']['inputs']['pdf-test-fonts']['default'], 'false')
+        for job, runner_name in [('build', 'Build instrumented test archive'),
+                                 ('coverage', "Run this shard's tests"),
+                                 ('sonarcloud', 'Generate Rust coverage')]:
+            steps = workflow['jobs'][job]['steps']
+            setup = next(step for step in steps if step.get('name') == 'Provision pinned PDF test fonts')
+            runner = next(step for step in steps if step.get('name') == runner_name)
+            self.assertLess(steps.index(setup), steps.index(runner))
+            self.assertIn('inputs.pdf-test-fonts', setup['if'])
+            if job == 'sonarcloud':
+                self.assertEqual(setup['if'], 'inputs.pdf-test-fonts && ' + runner['if'])
+            # Execute the actual shell with a stub caller fetcher, including a path with spaces.
+            for fail in (False, True):
+                with tempfile.TemporaryDirectory() as temp:
+                    root = Path(temp)
+                    (root / 'scripts').mkdir()
+                    (root / 'scripts/fetch-pdf-test-fonts.py').write_text(
+                        'import pathlib, sys\n'
+                        + ('sys.exit(7)\n' if fail else
+                           'p = pathlib.Path(sys.argv[1]); p.mkdir(parents=True)\n'
+                           '(p / "Inter-Regular.ttf").write_text("fixture")\n'))
+                    env_file = root / 'env'
+                    runner_temp = root / 'runner temp'
+                    result = subprocess.run(
+                        ['bash', '-e', '-o', 'pipefail', '-c', setup['run']], cwd=root,
+                        env={**os.environ, 'RUNNER_TEMP': str(runner_temp), 'GITHUB_ENV': str(env_file)},
+                        capture_output=True, text=True)
+                    if fail:
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertFalse(env_file.exists())
+                    else:
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertTrue((runner_temp / 'craft-pdf-test-fonts/Inter-Regular.ttf').is_file())
+                        self.assertEqual(env_file.read_text(),
+                                         f'CRAFT_PDF_TEST_FONT_DIR={runner_temp}/craft-pdf-test-fonts\n')
 
     def test_sharding_defaults_to_four_and_keeps_the_unsharded_path(self):
         workflow = yaml.load(
@@ -142,6 +227,15 @@ class SonarCloudTests(unittest.TestCase):
         build = workflow['jobs']['build']['steps']
         self.assertTrue(any('rustc-release.txt' in step.get('with', {}).get('path', '')
                             for step in build))
+
+    def test_shard_masks_only_test_failures(self):
+        workflow = yaml.load(
+            (ROOT / '.github/workflows/sonarcloud.yml').read_text(), Loader=yaml.BaseLoader)
+        tests = next(step for step in workflow['jobs']['coverage']['steps']
+                     if step.get('name') == "Run this shard's tests")
+        self.assertNotIn('continue-on-error', tests)
+        self.assertIn('-ne 100', tests['run'])
+        self.assertIn('no coverage profiles', tests['run'])
 
     def test_scan_fails_when_a_prerequisite_job_failed(self):
         workflow = yaml.load(

@@ -14,7 +14,7 @@ Full multi-platform release pipeline for Craft apps:
 - **Windows** (x64, x86, ARM64 MSI installer with WiX v5, CLI, Azure Trusted Signing)
 - **Linux** (x86_64, aarch64 AppImage, deb, rpm, tar.gz via nfpm)
 - **Flatpak** (x86_64, aarch64 bundle generation)
-- **FreeBSD** (FreeBSD 15.1-STABLE VM build & packaging for x86_64; aarch64 is cross-compiled in the same x86_64 VM and opt-in through `freebsd-architectures`, see #39)
+- **FreeBSD** (FreeBSD 15.1-STABLE VM build & packaging for x86_64 and aarch64; aarch64 is cross-compiled in the same x86_64 VM and set by default through `freebsd-architectures`, see #39)
 - **Arch Linux** (x86_64, aarch64 `.pkg.tar.zst` built via `makepkg` from release tarball, named by bundle id; set `has-arch: false` to skip)
 - **WebAssembly** (wasm32-unknown-unknown with Trunk)
 - **Linux RISC-V 64** (cross-compilation for riscv64gc-unknown-linux-gnu, producing deb, rpm, and tar.gz via SHA256-verified nfpm; built on Ubuntu 24.04, so it sets `GLIBC_FLOOR=2.39` for the app's `nfpm.yaml` to declare, see #44)
@@ -145,6 +145,15 @@ jobs:
 ### 3. `windows-arm64.yml`
 Cross-compiles ARM64 MSI on x64 Windows runner, then installs, verifies native ARM64 architecture (`0xAA64`), smoke tests the CLI, and uninstalls on a Windows 11 ARM64 runner.
 
+`app-dir` stays a single display/shortcut/registration name. Set `install-relative-path`
+separately for nested folders, for example `Programs/ArtCraft/PhotoCraft` below LocalAppData
+with `install-scope: perUser`, or `ArtCraft/PhotoCraft` below ProgramFiles with
+`install-scope: perMachine`. An empty scope retains the legacy installer defaults and
+`is-per-user` behaviour. Explicit scope is passed to msiexec as well as used for path checks.
+For the launcher's per-user-only installer, keep `is-per-user: true` to retain its shortcut,
+registry and custom-folder checks. Path components are validated before starting msiexec.
+
+
 #### Caller Example:
 ```yaml
 name: Windows ARM64
@@ -187,14 +196,14 @@ cross-compiled in it with stable Rust (the standard library comes from FreeBSD's
 aarch64 `lang/rust` package, against an arm64 sysroot built from `base.txz`). Its
 tests are built but not run, and its package check is skipped.
 
-The release workflow builds FreeBSD aarch64 the same way, but only when the caller
-sets `freebsd-architectures: '["x86_64","aarch64"]'` (the default is `'["x86_64"]'`).
-Opt in only once the app's `packaging/freebsd/package.sh` builds with
-`CARGO_BUILD_TARGET`, reads binaries from
-`$CARGO_TARGET_DIR/$CARGO_BUILD_TARGET/release` and names its archive
-`*-freebsd-aarch64.tar.gz`: the guest's `uname -m` is always `amd64`. The release
-job fails if an archive does not match its matrix architecture. Apps without a
-`package.sh` use the built-in packager, which already handles the cross target.
+The release workflow builds FreeBSD for `freebsd-architectures`, which defaults to
+`'["x86_64","aarch64"]'`; callers can narrow it, for example `'["x86_64"]'`. An app's
+`packaging/freebsd/package.sh` must build with `CARGO_BUILD_TARGET`, read binaries
+from `$CARGO_TARGET_DIR/$CARGO_BUILD_TARGET/release` and name its archive
+`*-freebsd-<arch>.tar.gz` for each listed architecture: the guest's `uname -m` is
+always `amd64`. The release job fails if an archive does not match its matrix
+architecture. Apps without a `package.sh` use the built-in packager, which already
+handles the cross target.
 
 The optional `architectures` input overrides the check matrix with a JSON array,
 for example `'["aarch64"]'` for a dedicated ARM check or
@@ -340,7 +349,7 @@ The quality gate for an app's pull requests and pushes to main. It runs `command
   persisted credentials, and craft-i18n when the app has `craft-i18n.rev`;
 - `packages` installed through `actions/install-apt-packages` on Linux legs;
 - the channel from `rust-toolchain.toml`, or `toolchain`, with clippy, rustfmt and `targets`;
-- prebuilt cargo tools from `tools` (by default `cargo-nextest`);
+- prebuilt cargo tools from `tools` (by default `cargo-nextest@0.9.150`);
 - `CARGO_PROFILE_DEV_DEBUG=line-tables-only` (set `dev-debug: ""` to keep the repository's
   profile) and the caller's `env`, `linux-env` and `windows-env` lines, each `KEY=VALUE`;
 - a rust-cache dependency cache that only the default branch saves, so pull requests restore
@@ -382,6 +391,21 @@ jobs:
 
 Concurrency belongs to the caller: a reusable workflow cannot set it for the run.
 
+The gate default and sharded SonarCloud coverage pin cargo-nextest to **0.9.150**, which fixes
+[GHSA-vc25-qg58-w57c](https://github.com/nextest-rs/nextest/security/advisories/GHSA-vc25-qg58-w57c).
+A caller overriding `tools` must also update its own nextest pin; changing the shared default
+cannot override it. Set a required minimum at the top of the caller's `.config/nextest.toml`,
+keeping its existing profiles and test groups:
+
+```toml
+nextest-version = "0.9.150"
+```
+
+A `recommended` minimum only warns; it does not enforce this requirement. The minimum-version
+check does not upgrade a developer's installed executable, and can be explicitly overridden.
+Do not enable experimental run recording or rerun untrusted portable recordings with an
+affected version. Ordinary compiled test archives used by coverage are a different feature.
+
 An app that also checks Windows on main, on manual runs and on pull requests labelled `full-ci`,
 with per-OS environment and a shorter Windows gate (PDFCraft's call):
 
@@ -395,7 +419,7 @@ jobs:
       packages: >-
         libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev
         libgtk-3-dev qpdf poppler-utils
-      tools: cargo-nextest@0.9.149,cargo-deny@0.20.2
+      tools: cargo-nextest@0.9.150,cargo-deny@0.20.2
       linux-env: PDFCRAFT_ORACLES_REQUIRED=1
       windows-env: PDFCRAFT_REQUIRE_WINRES=1
       # Windows checks what differs by platform: the build (with resources) and the tests.
@@ -492,7 +516,24 @@ SonarCloud callers whose instrumented workspace tests exceed the 90-minute
 default can pass `timeout-minutes: 120` under the calling job's `with`. This
 changes the job's time budget without dropping tests or coverage. Pass
 `fonts-ref` at the app's tested craft-fonts commit when its tests need those
-fonts. The scan still needs to finish and pass its quality gate.
+fonts. The pinned fonts are available both when compiling the test archive and
+when running tests; a requested font pin also sets `CRAFT_FONTS_REQUIRED=1`
+so missing embedded fonts fail explicitly. Callers with `scripts/fetch-pdf-test-fonts.py` can also pass
+`pdf-test-fonts: true` to provision their pinned PDF fixtures outside the checkout
+and set `CRAFT_PDF_TEST_FONT_DIR` before archive compilation and either test runner. Fixture provisioning
+failures stop that job and prevent the dependent scan. The scan still needs to finish and pass its quality gate.
+
+Callers with Python tooling can pass both `python-coverage-source` (a source directory)
+and `python-coverage-script` (the test script). The scan job runs that script under
+pinned coverage.py in an isolated virtual environment and writes `python-coverage.xml`.
+Both paths must be inside the checkout and contain no commas or glob characters.
+The environment contains only coverage.py and the runner’s Python standard library;
+caller coverage configuration is ignored so parallel-data settings cannot hide the report.
+Set `sonar.python.coverage.reportPaths=python-coverage.xml` in the caller's Sonar
+configuration and classify its test files as tests. The script runs in full, but
+is omitted from the production coverage report. Missing inputs, failed tests or
+report generation stop the job; empty inputs leave existing callers unchanged.
+This step requires the Sonar token, so token-independent CI should also run the tests.
 
 Workspaces run their tests as four parallel `cargo nextest` partitions by
 default. One job builds the instrumented test archive; each partition runs from
