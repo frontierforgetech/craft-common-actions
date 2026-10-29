@@ -95,7 +95,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Check out craft-fonts
-        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@main
+        uses: storytold/craft-common-actions/actions/checkout-craft-fonts@395270d2c0bd48ce1b71ae127f2a54e435fc1b42
         with:
           ref: ${{ inputs.fonts-ref }}
       - name: Require requested craft-fonts
